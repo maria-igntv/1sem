@@ -1,0 +1,13 @@
+for i in range (2) :
+    turtle.forward(20)
+    turtle.right(90)
+    turtle.forward(2*20)
+    turtle.right(90)
+        
+turtle.penup()
+turtle.forward(20)
+turtle.pendown()
+   
+turtle.penup()
+turtle.forward(20)
+turtle.pendown()
