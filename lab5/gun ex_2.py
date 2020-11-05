@@ -2,8 +2,7 @@ from random import randrange as rnd, choice
 import tkinter as tk
 import math
 import time
-
-# print (dir(math))
+import random
 
 root = tk.Tk()
 fr = tk.Frame(root)
@@ -11,22 +10,25 @@ root.title("Canon game") # window name
 root.geometry('800x600') # window size
 canv = tk.Canvas(root, bg='white')
 canv.pack(fill=tk.BOTH, expand=1)
+score = 0
+a = -5
+number_of_targets = int(input("Enter number of targets: "))
 
 
-class ball():
-    def __init__(self, x=40, y=450):
+class ball:
+    def __init__(self, x=40, y=500):
         """ Конструктор класса ball
         Args:
         x - начальное положение мяча по горизонтали
         y - начальное положение мяча по вертикали
         """
-        self.delete = 0
         self.x = x
         self.y = y
-        self.r = 10
+        self.r = random.randint(10, 30)
         self.vx = 0
         self.vy = 0
-        self.color = choice(['blue', 'green', 'red', 'brown'])
+        self.t = 0
+        self.color = choice(['blue', 'magenta', 'brown', 'purple', 'yellow', 'orange'])
         self.id = canv.create_oval(
             self.x - self.r,
             self.y - self.r,
@@ -35,7 +37,6 @@ class ball():
             fill=self.color
         )
         self.live = 30
-
 
     def destroy(self):
         """Проверяет необходимость удаления мяча из списка мячей
@@ -46,11 +47,10 @@ class ball():
         else:
             return 0  # else return 0 
 
-
     def set_coords(self):
         """Рисует снаряд"""
         # starting and ending points of a target
-        canv.coords(  
+        canv.coords(
             self.id,
             self.x - self.r,
             self.y - self.r,
@@ -60,12 +60,11 @@ class ball():
 
     def move(self):
         """Переместить мяч по прошествии единицы времени.
-
-        Метод описывает перемещение мяча за один кадр. То есть, обновляет значения
+        Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
         self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
         и стен по краям окна (размер окна 800х600).
         """
-        #reflection of the walls
+
         if self.x > 790:  # x coordinate (right side)
             self.vx *= -1
             
@@ -86,7 +85,6 @@ class ball():
         if abs(self.vy) == 0 and abs(self.vy) == 0: # the ball has stopped => delete
             self.delete = 1
 
-
         # movement of the ball
         self.x += self.vx 
         self.y -= self.vy
@@ -102,30 +100,27 @@ class ball():
         Returns:
             Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
         """
-        if (self.x - obj.x)**2 + (self.y - obj.y)**2 < (obj.r + self.r)**2: # if the condition is satisfied then we hitted the target
+        if (obj.x - self.x) ** 2 + (obj.y - self.y) ** 2 <= (obj.r + self.r) ** 2: # if the condition is satisfied then we hitted the target
             self.delete = 1 # if the ball hitted the target => delete the ball 
             return True
-
         else:
             return False # else => next try
 
 
-class gun():
+class gun:
+
     def __init__(self):
         self.f2_power = 10
         self.f2_on = 0
         self.an = 1
-        self.id = canv.create_line(20, 450, 50, 420, width=7)
-
+        self.id = canv.create_line(20, 500, 50, 420, width=7)
 
     def fire2_start(self, event):
         """Запускает снаряд"""
         self.f2_on = 1
 
-
     def fire2_end(self, event):
         """Выстрел мячом.
-
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
@@ -135,26 +130,22 @@ class gun():
         new_ball.r += 5
         self.an = math.atan((event.y - new_ball.y) / (event.x - new_ball.x))
         new_ball.vx = self.f2_power * math.cos(self.an)
-        new_ball.vy = - self.f2_power * math.sin(self.an)
+        new_ball.vy = self.f2_power * math.sin(self.an)
         balls += [new_ball]
         self.f2_on = 0
         self.f2_power = 10
 
-
     def targetting(self, event=0):
         """Прицеливание. Зависит от положения мыши."""
         if event:
-            self.an = math.atan((event.y - 450) / (event.x - 20))
-
+            self.an = math.atan((event.y - 500) / (event.x - 20))
         if self.f2_on:
             canv.itemconfig(self.id, fill='orange')
-
         else:
             canv.itemconfig(self.id, fill='black')
-
-        canv.coords(self.id, 20, 450,
+        canv.coords(self.id, 20, 500,
                     20 + max(self.f2_power, 20) * math.cos(self.an),
-                    450 + max(self.f2_power, 20) * math.sin(self.an)
+                    500 + max(self.f2_power, 20) * math.sin(self.an)
                     )
 
     def power_up(self):
@@ -162,111 +153,129 @@ class gun():
         if self.f2_on:
             if self.f2_power < 100:
                 self.f2_power += 1
-
             canv.itemconfig(self.id, fill='orange')
-
         else:
             canv.itemconfig(self.id, fill='black')
 
 
 class target():
+
     def __init__(self):
         self.points = 0
+        self.live = 1
+        self.vx = random.randint(0, 5)
+        self.vy = random.randint(0, 5)
         self.id = canv.create_oval(0, 0, 0, 0)
-        self.id_points = canv.create_text(30, 30, text=self.points, font='30')
         self.new_target()
-
 
     def new_target(self):
         """ Инициализация новой цели. """
         x = self.x = rnd(340, 750) # x coordinate of a new target in range of 340 % 750
         y = self.y = rnd(185, 490) # y coordinate of a new target in range of 185 % 490
-        r = self.r = rnd(10, 50)    # radius of a target
-        self.live = 1
+        r = self.r = rnd(10, 50)
         color = self.color = 'red'
-        canv.coords(self.id, x - r, y - r, x + r, y + r) 
+        canv.coords(self.id, x - r, y - r, x + r, y + r)
         canv.itemconfig(self.id, fill=color)
-
 
     def hit(self, points=1):
         """Попадание шарика в цель."""
-        # hitting the target 
-        canv.coords(self.id, -10, -10, -10, -10)
+        # hitting the target
+        self.vx = 0
+        self.vy = 0
+        self.x = -100
+        self.y = -100
+        canv.coords(self.id, self.x - self.r, self.y - self.r, self.x + self.r, self.y + self.r)
         self.points += points
-        canv.itemconfig(self.id_points, text=self.points) # counting scores
+
+    def move(self):
+        """Переместить мяч по прошествии единицы времени.
+        Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
+        self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
+        и стен по краям окна (размер окна 800х600).
+        """
+        '''
+    '''
+
+        Y = 600
+        X = 800
+        if (abs(self.x + self.vx - X / 2) < X / 2 - self.r) and (abs(self.y + self.vy - Y / 2) < Y / 2 - self.r):
+            self.x += self.vx
+            self.y += self.vy
+        elif (abs(self.x + self.vx - X / 2) > X / 2 - self.r) and (abs(self.y + self.vy - Y / 2) < Y / 2 - self.r):
+            self.vx = -self.vx
+        elif (abs(self.x + self.vx - X / 2) < X / 2 - self.r) and (abs(self.y + self.vy - Y / 2) > Y / 2 - self.r):
+            self.vy = -self.vy
+            self.x += self.vx
+        else:
+            self.vy = -self.vy
+            self.vx = -self.vx
+
+        canv.coords(
+            self.id,
+            self.x - self.r,
+            self.y - self.r,
+            self.x + self.r,
+            self.y + self.r
+        )
 
 
-t1 = target()
-t2 = target()
-t3 = target()
-screen1 = canv.create_text(400, 300, text='', font='30')
+screen1 = canv.create_text(400, 300, text='', font='28')
+points = canv.create_text(30, 30, text=score, font='28')
 g1 = gun()
-
+balls = []
+targets = []
+bullet = 0
+for i in range(number_of_targets):
+    targets.append(target())
 
 
 def new_game(event=''):
-    """ Запускает новую игру"""
-    global gun, t1, t2, t3, screen1, balls, bullet
-    t1.new_target()  # Creating of new 1 target
-    t2.new_target()  # Creating of new 2 target
-    t3.new_target()  # Creating of new 3 target
-    bullet = 0  # Numbers of hitting the target
-    balls = []  # List of balls
+    global gun, screen1, balls, bullet, targets, score
+    for i in targets:  #Creating of new targets
+        i.new_target()
+        i.live = 1
+    bullet = 0 # Numbers of hitting the target
+    balls = [] # List of balls
     canv.bind('<Button-1>', g1.fire2_start)
     canv.bind('<ButtonRelease-1>', g1.fire2_end)
     canv.bind('<Motion>', g1.targetting)
 
     time_per_frames = 0.03  # Time between shots
-    t1.live = 1  # Number of shots in first target
-    t2.live = 1  # Number of shots in secind target
-    t3.live = 1  # Number of shots in third target
+
+    flag = False
+    for i in targets:
+        if i.live == 1:
+            flag = True
+            
     while True:
         for b in balls:
-            b.move()  # Movement of the ball
-
-            if b.hittest(t1) and t1.live: # Checking the ball hitting the 1 target
-                t1.live -= 1
+            b.move() # Movement of the ball
+            
+            for i in range(len(targets)):
                 
-            if b.hittest(t2) and t2.live: # Checking the ball hitting the 2 target
-                t2.live -= 1
-                
-            if b.hittest(t3) and t3.live: # Checking the ball hitting the 3 target
-                t3.live -= 1
-
-                if t1.live == 0: # Checking how many times is left to hit the targer
-                    t1.hit()  # hit processing
+                if b.hittest(targets[i]) and targets[i].live: # Checking the ball hitting the target
                     
-                if t2.live == 0: # Checking how many times is left to hit the targer
-                    t2.hit()  # hit processing
-                    
-                if t3.live == 0: # Checking how many times is left to hit the targer
-                    t3.hit()  # hit processing
-                    
+                    targets[i].live = 0 # Checking how many times is left to hit the target
+                    targets[i].hit() # hit processing
+                    score += targets[i].points
+                    canv.create_rectangle(10, 10, 50, 50, fill='red')
+                    points = canv.create_text(30, 30, text=score, font='28')
                     if bullet == 1:
                         canv.itemconfig(screen1, text='You destroyed the taget in  ' + str(bullet) + ' shot')
                     else:
                         canv.itemconfig(screen1, text='You destroyed the taget in  ' + str(bullet) + ' shots')
                     bullet = 0  # Updating the ball counter
-
-            if b.destroy() == 1: # Condition of deliting the ball is satisfied
-                balls.remove(b)  # Deliting the ball
-
-
-        if len(balls) == 0 and t1.live == 0 and t2.live == 0 and t3.live == 0:   
-            canv.itemconfig(screen1, text='')  # Deleting inscription
-            t1.new_target()   # drawing new target
-            t2.new_target()   # drawing new target
-            t3.new_target()   # drawing new target
-
-        canv.update()  # Updating of shot
-        time.sleep(time_per_frames) 
-        g1.targetting()  
-        g1.power_up()  # Increasing velocity of shell
-
+        for t in targets:
+            t.move() # movement of target
+        canv.update() # Updating of shot
+        time.sleep(time_per_frames)
+        g1.targetting()
+        g1.power_up() # Increasing velocity of shell
     canv.itemconfig(screen1, text='')
+    canv.delete(gun)
+    root.after(750, new_game)
 
 
-if __name__ == '__main__':
+new_game()
 
-    new_game()
-
+tk.mainloop()
